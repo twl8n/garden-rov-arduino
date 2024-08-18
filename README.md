@@ -4,9 +4,11 @@ UGV for garden cultivation, remote control via WiFi, featuring Arduino and Pi Ze
 # Install arduino-cli on Raspberry Pi Zero W
 
 arduino cli on RPi zero, apparently no apt package?
-`curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
 
-`wget https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh
+`
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+# or
+wget https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh
 
 zeus@raspberrypi:~ $ wget https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh
 --2024-08-16 03:04:39--  https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh
@@ -94,15 +96,12 @@ zeus@raspberrypi:~ $ arduino-cli core list
 ID          Installed Latest Name
 arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
 
-arduino-cli monitor -p /dev/ttyACM0 -b arduino:avr:uno
-
-arduino-cli lib install "Cytron Motor Drivers Library"
+zeus@raspberrypi:~ $ arduino-cli lib install "Cytron Motor Drivers Library"
 Downloading Cytron Motor Drivers Library@1.0.1...
 Cytron Motor Drivers Library@1.0.1 downloaded
 Installing Cytron Motor Drivers Library@1.0.1...
 Installed Cytron Motor Drivers Library@1.0.1
 
-arduino-cli compile --fqbn arduino:avr:uno buggy
 zeus@raspberrypi:~ $ arduino-cli compile --fqbn arduino:avr:uno buggy
 Sketch uses 1644 bytes (5%) of program storage space. Maximum is 32256 bytes.
 Global variables use 17 bytes (0%) of dynamic memory, leaving 2031 bytes for local variables. Maximum is 2048 bytes.
@@ -112,13 +111,17 @@ Cytron Motor Drivers Library 1.0.1   /home/zeus/Arduino/libraries/Cytron_Motor_D
 
 Used platform Version Path
 arduino:avr   1.8.6   /home/zeus/.arduino15/packages/arduino/hardware/avr/1.8.6
+`
 
-# The final arg is path relative to cwd, *not* object name or project name.
-# arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
-
+The final arg is path relative to cwd, *not* object name or project name.
+`
+arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
 arduino-cli compile -e --fqbn arduino:avr:uno .
-# now a build dir exists in cwd
+`
 
+Now a build dir exists in cwd
+
+`
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
 New upload port: /dev/ttyACM0 (serial)
 
@@ -189,10 +192,12 @@ avrdude: 1644 bytes of flash written
 avrdude done.  Thank you.
 
 New upload port: /dev/ttyACM0 (serial)
+`
 
 # Install arduino-cli on MacOS
 
-# install, choose board
+Install, choose board
+`
 > arduino-cli config init
 Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
 > arduino-cli core update-index
@@ -207,119 +212,88 @@ Platform arduino:avr@1.8.6 already installed
 > arduino-cli core list
 ID          Installed Latest Name
 arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
+`
 
---
+For reference see:
 https://arduino.github.io/arduino-cli/1.0/getting-started/
-Fully Qualified Board Name
-brew update
-brew upgrade
+
+fqbn or FQBN is: Fully Qualified Board Name
+
+On the Mac:
+
+`
 brew install arduino-cli
 arduino-cli config init
 Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
-# a fresh install is to update the local cache of available platforms and libraries
-arduino-cli core update-index
-arduino-cli board list
+`
+A fresh install is to update the local cache of available platforms and libraries
 
+`arduino-cli core update-index`
+
+`
 > arduino-cli board list
 Port                            Protocol Type              Board Name  FQBN            Core
 /dev/cu.Bluetooth-Incoming-Port serial   Serial Port       Unknown
 /dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno arduino:avr:uno arduino:avr
 /dev/cu.wlan-debug              serial   Serial Port       Unknown
+`
 
-# assuming the FQBN is arduino:samd
-arduino-cli core install arduino:samd
-arduino-cli core install arduino:avr:uno # didn't work, need "core" not "fqbn"
-arduino-cli core install arduino:avr
+`arduino-cli core install arduino:avr:uno # didn't work, need "core" not "fqbn"`
+`arduino-cli core install arduino:avr`
 
+`
 > arduino-cli core install arduino:avr
 Platform arduino:avr@1.8.6 already installed
-
-arduino-cli core list
-
+`
+`
 > arduino-cli core list
 ID          Installed Latest Name
 arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
+`
 
-arduino-cli compile --fqbn arduino:samd:mkr1000 MyFirstSketch
+# Compile and upload. 
 
-# need the fqbn for compile:
-arduino-cli compile --fqbn arduino:avr:uno dual_servo.ino
+Need the fqbn for compile to succeed. 
 
-> arduino-cli compile --fqbn arduino:avr:uno dual_servo.ino
-/Users/zeus/src/Arduino/dual_servo/dual_servo.ino:1:10: fatal error: Servo.h: No such file or directory
- #include <Servo.h>
-          ^~~~~~~~~
-compilation terminated.
+The Arduino Uno usb is at /dev/cu.usbmodem2101. Note the trailing dot "." if you are in sketch directory, you don't have to name the sketch, just use dot which means "current working directory".
 
-Used platform Version Path
-arduino:avr   1.8.6   /Users/zeus/Library/Arduino15/packages/arduino/hardware/avr/1.8.6
-Error during build: exit status 1
+`arduino-cli compile -u -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .`
 
-> arduino-cli lib update-index
-Downloading index: library_index.tar.bz2 downloaded
-# ok, downloaded, but was the library installed?? Apparently not.
+The final argument is path relative to cwd (the current working directory), *not* object name or project name.
 
-> arduino-cli lib install Servo
-Downloading Servo@1.2.2...
-Servo@1.2.2 Servo@1.2.2 already downloaded
-Installing Servo@1.2.2...
-Installed Servo@1.2.2
-# why "already downloaded"?
+# Terminal monitor
 
-> arduino-cli compile --fqbn arduino:avr:uno dual_servo.ino
-Sketch uses 5692 bytes (17%) of program storage space. Maximum is 32256 bytes.
-Global variables use 720 bytes (35%) of dynamic memory, leaving 1328 bytes for local variables. Maximum is 2048 bytes.
-
-Used library Version Path
-Servo        1.2.2   /Users/zeus/Documents/Arduino/libraries/Servo
-
-Used platform Version Path
-arduino:avr   1.8.6   /Users/zeus/Library/Arduino15/packages/arduino/hardware/avr/1.8.6
-
-# compile and upload
-arduino-cli compile -u -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
-
-
-# upload example
-arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:samd:mkr1000 MyFirstSketch
-
-arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno dual_servo
-
-> arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno dual_servo
-Error during Upload: Can't open sketch: no such file or directory: /Users/zeus/src/Arduino/dual_servo/dual_servo
-
-# OMG, the final arg is path relative to cwd, *not* object name or project name.
-> arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
-New upload port: /dev/cu.usbmodem2101 (serial)
-
-# terminal monitor
 `arduino-cli monitor -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
-# probably need --raw to read without cr/lf buffering
+
+Probably --raw to read without cr/lf buffering
+
 `arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
 
 `stty sane^J # take the terminal out of raw mode.`
 
-Compile on Mac, scp buggy.ino.hex to rpi, upload from rpi to uno
+# Compile on Mac, scp buggy.ino.hex to rpi, upload from rpi to uno
 
 `
-cd src/Arduino/buggy
+cd src/buggy
 arduino-cli compile -e --fqbn arduino:avr:uno .
 scp build/arduino.avr.uno/buggy.ino.hex raspberrypi.local:
-arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex
 `
 
+On the RPi Zero:
+`
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex
 New upload port: /dev/ttyACM0 (serial)
+`
 
 # Library install and cli problem solving
 
-> arduino-cli version
-arduino-cli  Version: 1.0.3 Commit: Homebrew Date: 2024-07-23T08:43:59Z
 
-library, compile, upload
-> cd src/Arduino/dual_servo
-> arduino-cli compile --fqbn arduino:avr:uno dual_servo.ino
-/Users/zeus/src/Arduino/dual_servo/dual_servo.ino:1:10: fatal error: Servo.h: No such file or directory
+Library, compile, upload
+
+`
+> cd src/Arduino/demo_servo
+> arduino-cli compile --fqbn arduino:avr:uno demo_servo.ino
+/Users/zeus/src/Arduino/demo_servo/demo_servo.ino:1:10: fatal error: Servo.h: No such file or directory
  #include <Servo.h>
           ^~~~~~~~~
 compilation terminated.
@@ -338,25 +312,5 @@ Downloading Servo@1.2.2...
 Servo@1.2.2 Servo@1.2.2 already downloaded
 Installing Servo@1.2.2...
 Installed Servo@1.2.2
-
-> arduino-cli compile --fqbn arduino:avr:uno dual_servo.ino
-Sketch uses 5692 bytes (17%) of program storage space. Maximum is 32256 bytes.
-Global variables use 720 bytes (35%) of dynamic memory, leaving 1328 bytes for local variables. Maximum is 2048 bytes.
-
-Used library Version Path
-Servo        1.2.2   /Users/zeus/Documents/Arduino/libraries/Servo
-
-Used platform Version Path
-arduino:avr   1.8.6   /Users/zeus/Library/Arduino15/packages/arduino/hardware/avr/1.8.6
-
-> pwd
-/Users/zeus/src/Arduino/dual_servo
-
-# The final arg is path relative to cwd, *not* object name or project name.
-> arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
-New upload port: /dev/cu.usbmodem2101 (serial)
-
-arduino-cli compile -u -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno dual_servo.ino
-# 
-arduino-cli compile -u -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
+`
 
