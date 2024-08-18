@@ -72,20 +72,31 @@ The final argument is path relative to cwd (the current working directory), *not
 
 # Terminal monitor
 
-`arduino-cli monitor -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
+I communicate with the UGV via WiFi on the RPi Zero. I ssh from the Mac to the Zero, run `arduino-cli monitor` in raw mode, and use that to drive the UGV. I've got Emacs running, and at least two terminal sessions:
 
-Probably --raw to read without cr/lf buffering
+- local shell in the sketch directory for `scp` from Mac to RPi Zero
+- ssh to RPi Zero to run arduino-cli commands
 
-`arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
+`arduino-cli monitor -p /dev/ttyACM0 -b arduino:avr:uno`
+
+Use --raw to read without cr/lf buffering.
+
+`arduino-cli monitor --raw -p /dev/ttyACM0 -b arduino:avr:uno`
+
+To return your terminal session to normal, use `stty sane`. On some historical systems it was necessary to end the command with control-J, not carriage return. I still do that. It works.
 
 `stty sane^J # take the terminal out of raw mode.`
 
-# Compile on Mac, `scp` `buggy.ino.hex` to RPi, upload from RPi to Uno.
+# Compile on Mac, upload from RPi to Uno.
+
+Compile on the Mac where it is fast (less than a second vs a loooong time on the RPi Zero). Then `scp`
+`buggy.ino.hex` to RPi, upload from RPi to Uno.
 
 The final arg for the compile command is path relative to cwd, *not* object name or project name.
 
 Use `-e` to export binaries to a local `build` directory.
 
+Incidentally, I actually work in Emacs, in c-mode, and run that compile command with Emacs `compile`. Works like a charm. The command output seems standard, so that Emacs can jump to compile errors automagically.
 
 ```
 arduino-cli compile -e --fqbn arduino:avr:uno .
