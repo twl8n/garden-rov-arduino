@@ -114,29 +114,18 @@ Used platform Version Path
 arduino:avr   1.8.6   /home/zeus/.arduino15/packages/arduino/hardware/avr/1.8.6
 ```
 
-# Compile on the Mac, scp to RPi Zero, upload from RPi Zero to Uno
+# How to figure out which file is required for `upload` command.
 
-The final arg for the compile command is path relative to cwd, *not* object name or project name.
+I did this (once) on the RPi Zero. It was very slow. Normally, I compile on the Mac, `scp` to the RPi, `arduino-clin upload` from the RPi to the Uno, then run `arduino-cli monitor` on the RPi to send commands to my sketch.
 
-Use `-e` to export binaries to a local `build` directory.
+Change director into the sketch. Compile.
 
+Use the `-v` verbose form of the `arduino-cli upload` command to see what file is uploaded. It turns out that we only need the .ino.hex file.
 
-```
-arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
-arduino-cli compile -e --fqbn arduino:avr:uno .
-```
+Note this line in the output below:
 
-Copy the entire build directory over to the RPi because we don't know which file(s) need to be uploaded to the Uno. We'll use the `-v` verbose form of the `upload` command to see what file is uploaded. It turns out that we only need the .ino.hex file.
+`avrdude: reading input file "/tmp/arduino/sketches/6C361DC52CF963E58E6EF93D4417CC4E/buggy.ino.hex"`
 
-Now a build dir exists in current directory. `cd` up one level so we can copy the entire sketch directory to
-the RPi.
-
-```
-cd ..
-scp -r buggy raspberrypi.local:
-```
-
-On the RPi Zero:
 
 ```
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
@@ -289,15 +278,20 @@ Probably --raw to read without cr/lf buffering
 
 `stty sane^J # take the terminal out of raw mode.`
 
-# Compile on Mac, scp buggy.ino.hex to rpi, upload from rpi to uno
+# Compile on Mac, `scp` `buggy.ino.hex` to RPi, upload from RPi to Uno.
+
+The final arg for the compile command is path relative to cwd, *not* object name or project name.
+
+Use `-e` to export binaries to a local `build` directory.
+
 
 ```
-cd src/buggy
 arduino-cli compile -e --fqbn arduino:avr:uno .
 scp build/arduino.avr.uno/buggy.ino.hex raspberrypi.local:
 ```
 
 On the RPi Zero:
+
 ```
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex
 New upload port: /dev/ttyACM0 (serial)
