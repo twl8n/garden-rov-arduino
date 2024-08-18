@@ -2,6 +2,104 @@
 
 Unmanned guided vehicle (UGV) for garden cultivation, remote control via WiFi, featuring Arduino and Pi Zero W with streaming camera.
 
+# Install arduino-cli on MacOS
+
+Install, choose board
+
+```
+> arduino-cli config init
+Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
+> arduino-cli core update-index
+Downloading index: package_index.tar.bz2 downloaded
+> arduino-cli board list
+Port                            Protocol Type              Board Name  FQBN            Core
+/dev/cu.Bluetooth-Incoming-Port serial   Serial Port       Unknown
+/dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno arduino:avr:uno arduino:avr
+/dev/cu.wlan-debug              serial   Serial Port       Unknown
+> arduino-cli core install arduino:avr
+Platform arduino:avr@1.8.6 already installed
+> arduino-cli core list
+ID          Installed Latest Name
+arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
+```
+
+For reference see:
+https://arduino.github.io/arduino-cli/1.0/getting-started/
+
+fqbn or FQBN is: Fully Qualified Board Name
+
+On the Mac:
+
+```
+brew install arduino-cli
+arduino-cli config init
+Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
+```
+A fresh install is to update the local cache of available platforms and libraries
+
+`arduino-cli core update-index`
+
+```
+> arduino-cli board list
+Port                            Protocol Type              Board Name  FQBN            Core
+/dev/cu.Bluetooth-Incoming-Port serial   Serial Port       Unknown
+/dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno arduino:avr:uno arduino:avr
+/dev/cu.wlan-debug              serial   Serial Port       Unknown
+```
+
+`arduino-cli core install arduino:avr:uno # didn't work, need "core" not "fqbn"`
+`arduino-cli core install arduino:avr`
+
+```
+> arduino-cli core install arduino:avr
+Platform arduino:avr@1.8.6 already installed
+```
+```
+> arduino-cli core list
+ID          Installed Latest Name
+arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
+```
+
+# Compile and upload. 
+
+Need the fqbn for compile to succeed. 
+
+The Arduino Uno usb is at /dev/cu.usbmodem2101. Note the trailing dot "." if you are in sketch directory, you don't have to name the sketch, just use dot which means "current working directory".
+
+`arduino-cli compile -u -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .`
+
+The final argument is path relative to cwd (the current working directory), *not* object name or project name.
+
+# Terminal monitor
+
+`arduino-cli monitor -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
+
+Probably --raw to read without cr/lf buffering
+
+`arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
+
+`stty sane^J # take the terminal out of raw mode.`
+
+# Compile on Mac, `scp` `buggy.ino.hex` to RPi, upload from RPi to Uno.
+
+The final arg for the compile command is path relative to cwd, *not* object name or project name.
+
+Use `-e` to export binaries to a local `build` directory.
+
+
+```
+arduino-cli compile -e --fqbn arduino:avr:uno .
+scp build/arduino.avr.uno/buggy.ino.hex raspberrypi.local:
+```
+
+On the RPi Zero:
+
+```
+zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex
+New upload port: /dev/ttyACM0 (serial)
+```
+
+
 # Install arduino-cli on Raspberry Pi Zero W
 
 Normally, I'd use `apt` but for the arduino cli on RPi zero, apparently no apt package?
@@ -197,103 +295,6 @@ avrdude: 1644 bytes of flash written
 
 avrdude done.  Thank you.
 
-New upload port: /dev/ttyACM0 (serial)
-```
-
-# Install arduino-cli on MacOS
-
-Install, choose board
-
-```
-> arduino-cli config init
-Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
-> arduino-cli core update-index
-Downloading index: package_index.tar.bz2 downloaded
-> arduino-cli board list
-Port                            Protocol Type              Board Name  FQBN            Core
-/dev/cu.Bluetooth-Incoming-Port serial   Serial Port       Unknown
-/dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno arduino:avr:uno arduino:avr
-/dev/cu.wlan-debug              serial   Serial Port       Unknown
-> arduino-cli core install arduino:avr
-Platform arduino:avr@1.8.6 already installed
-> arduino-cli core list
-ID          Installed Latest Name
-arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
-```
-
-For reference see:
-https://arduino.github.io/arduino-cli/1.0/getting-started/
-
-fqbn or FQBN is: Fully Qualified Board Name
-
-On the Mac:
-
-```
-brew install arduino-cli
-arduino-cli config init
-Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
-```
-A fresh install is to update the local cache of available platforms and libraries
-
-`arduino-cli core update-index`
-
-```
-> arduino-cli board list
-Port                            Protocol Type              Board Name  FQBN            Core
-/dev/cu.Bluetooth-Incoming-Port serial   Serial Port       Unknown
-/dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno arduino:avr:uno arduino:avr
-/dev/cu.wlan-debug              serial   Serial Port       Unknown
-```
-
-`arduino-cli core install arduino:avr:uno # didn't work, need "core" not "fqbn"`
-`arduino-cli core install arduino:avr`
-
-```
-> arduino-cli core install arduino:avr
-Platform arduino:avr@1.8.6 already installed
-```
-```
-> arduino-cli core list
-ID          Installed Latest Name
-arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
-```
-
-# Compile and upload. 
-
-Need the fqbn for compile to succeed. 
-
-The Arduino Uno usb is at /dev/cu.usbmodem2101. Note the trailing dot "." if you are in sketch directory, you don't have to name the sketch, just use dot which means "current working directory".
-
-`arduino-cli compile -u -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .`
-
-The final argument is path relative to cwd (the current working directory), *not* object name or project name.
-
-# Terminal monitor
-
-`arduino-cli monitor -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
-
-Probably --raw to read without cr/lf buffering
-
-`arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno`
-
-`stty sane^J # take the terminal out of raw mode.`
-
-# Compile on Mac, `scp` `buggy.ino.hex` to RPi, upload from RPi to Uno.
-
-The final arg for the compile command is path relative to cwd, *not* object name or project name.
-
-Use `-e` to export binaries to a local `build` directory.
-
-
-```
-arduino-cli compile -e --fqbn arduino:avr:uno .
-scp build/arduino.avr.uno/buggy.ino.hex raspberrypi.local:
-```
-
-On the RPi Zero:
-
-```
-zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex
 New upload port: /dev/ttyACM0 (serial)
 ```
 
