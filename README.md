@@ -1,11 +1,12 @@
 # garden-rov-arduino
-UGV for garden cultivation, remote control via WiFi, featuring Arduino and Pi Zero W with streaming camera.
+
+Unmanned guided vehicle (UGV) for garden cultivation, remote control via WiFi, featuring Arduino and Pi Zero W with streaming camera.
 
 # Install arduino-cli on Raspberry Pi Zero W
 
-arduino cli on RPi zero, apparently no apt package?
+Normally, I'd use `apt` but for the arduino cli on RPi zero, apparently no apt package?
 
-`
+```
 curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
 # or
 wget https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh
@@ -111,17 +112,18 @@ Cytron Motor Drivers Library 1.0.1   /home/zeus/Arduino/libraries/Cytron_Motor_D
 
 Used platform Version Path
 arduino:avr   1.8.6   /home/zeus/.arduino15/packages/arduino/hardware/avr/1.8.6
-`
+```
 
 The final arg is path relative to cwd, *not* object name or project name.
-`
+
+```
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
 arduino-cli compile -e --fqbn arduino:avr:uno .
-`
+```
 
 Now a build dir exists in cwd
 
-`
+```
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
 New upload port: /dev/ttyACM0 (serial)
 
@@ -192,12 +194,13 @@ avrdude: 1644 bytes of flash written
 avrdude done.  Thank you.
 
 New upload port: /dev/ttyACM0 (serial)
-`
+```
 
 # Install arduino-cli on MacOS
 
 Install, choose board
-`
+
+```
 > arduino-cli config init
 Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
 > arduino-cli core update-index
@@ -212,7 +215,7 @@ Platform arduino:avr@1.8.6 already installed
 > arduino-cli core list
 ID          Installed Latest Name
 arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
-`
+```
 
 For reference see:
 https://arduino.github.io/arduino-cli/1.0/getting-started/
@@ -221,35 +224,35 @@ fqbn or FQBN is: Fully Qualified Board Name
 
 On the Mac:
 
-`
+```
 brew install arduino-cli
 arduino-cli config init
 Config file written to: /Users/zeus/Library/Arduino15/arduino-cli.yamlt
-`
+```
 A fresh install is to update the local cache of available platforms and libraries
 
 `arduino-cli core update-index`
 
-`
+```
 > arduino-cli board list
 Port                            Protocol Type              Board Name  FQBN            Core
 /dev/cu.Bluetooth-Incoming-Port serial   Serial Port       Unknown
 /dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno arduino:avr:uno arduino:avr
 /dev/cu.wlan-debug              serial   Serial Port       Unknown
-`
+```
 
 `arduino-cli core install arduino:avr:uno # didn't work, need "core" not "fqbn"`
 `arduino-cli core install arduino:avr`
 
-`
+```
 > arduino-cli core install arduino:avr
 Platform arduino:avr@1.8.6 already installed
-`
-`
+```
+```
 > arduino-cli core list
 ID          Installed Latest Name
 arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
-`
+```
 
 # Compile and upload. 
 
@@ -273,24 +276,24 @@ Probably --raw to read without cr/lf buffering
 
 # Compile on Mac, scp buggy.ino.hex to rpi, upload from rpi to uno
 
-`
+```
 cd src/buggy
 arduino-cli compile -e --fqbn arduino:avr:uno .
 scp build/arduino.avr.uno/buggy.ino.hex raspberrypi.local:
-`
+```
 
 On the RPi Zero:
-`
+```
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex
 New upload port: /dev/ttyACM0 (serial)
-`
+```
 
 # Library install and cli problem solving
 
 
 Library, compile, upload
 
-`
+```
 > cd src/Arduino/demo_servo
 > arduino-cli compile --fqbn arduino:avr:uno demo_servo.ino
 /Users/zeus/src/Arduino/demo_servo/demo_servo.ino:1:10: fatal error: Servo.h: No such file or directory
@@ -312,5 +315,5 @@ Downloading Servo@1.2.2...
 Servo@1.2.2 Servo@1.2.2 already downloaded
 Installing Servo@1.2.2...
 Installed Servo@1.2.2
-`
+```
 
