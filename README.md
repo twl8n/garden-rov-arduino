@@ -114,14 +114,29 @@ Used platform Version Path
 arduino:avr   1.8.6   /home/zeus/.arduino15/packages/arduino/hardware/avr/1.8.6
 ```
 
-The final arg is path relative to cwd, *not* object name or project name.
+# Compile on the Mac, scp to RPi Zero, upload from RPi Zero to Uno
+
+The final arg for the compile command is path relative to cwd, *not* object name or project name.
+
+Use `-e` to export binaries to a local `build` directory.
+
 
 ```
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
 arduino-cli compile -e --fqbn arduino:avr:uno .
 ```
 
-Now a build dir exists in cwd
+Copy the entire build directory over to the RPi because we don't know which file(s) need to be uploaded to the Uno. We'll use the `-v` verbose form of the `upload` command to see what file is uploaded. It turns out that we only need the .ino.hex file.
+
+Now a build dir exists in current directory. `cd` up one level so we can copy the entire sketch directory to
+the RPi.
+
+```
+cd ..
+scp -r buggy raspberrypi.local:
+```
+
+On the RPi Zero:
 
 ```
 zeus@raspberrypi:~ $ arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno buggy
