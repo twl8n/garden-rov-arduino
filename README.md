@@ -225,9 +225,11 @@ arduino:avr   1.8.6   /home/zeus/.arduino15/packages/arduino/hardware/avr/1.8.6
 
 # How to figure out which file is required for `upload` command.
 
-I did this (once) on the RPi Zero. It was very slow. Normally, I compile on the Mac, `scp` to the RPi, `arduino-clin upload` from the RPi to the Uno, then run `arduino-cli monitor` on the RPi to send commands to my sketch.
+I comipled (once) on the RPi Zero. It was very slow. Normally, I compile on the Mac, `scp` to the RPi,
+`arduino-clin upload` from the RPi to the Uno, then run `arduino-cli monitor` on the RPi to send commands to
+my sketch.
 
-Change director into the sketch. Compile.
+Change director into the sketch. Compile. The -e arg is not necessary yet.
 
 Use the `-v` verbose form of the `arduino-cli upload` command to see what file is uploaded. It turns out that we only need the .ino.hex file.
 
