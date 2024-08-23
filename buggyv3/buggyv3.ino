@@ -2,6 +2,8 @@
 // set turning, forward, backing flags
 // decrease turns to straight forward or back
 // turning use different min speed, maybe different speed decay
+// need dynamic speed multiplier
+// is keypad 3 "turn the front right" or "back up to the right"? I think back+right.
 
 // Continuous drive strategy (vs V2 which was "drive 500 ms, stop motors, await next command".
 // Continue driving, maybe forward, maybe slowly revert to forward or slow down?
@@ -43,13 +45,18 @@ int is_forward = 0;
 int is_backing = 0;
 
 // When turning, the min speed should be closer to 16.
-int min_speed = 10; // below this, we just go to zero.
+int min_speed = 20; // below this, we just go to zero.
 int turning_min_speed = 14;
 
 // Large numbers, like 20, decay too slow.
 int speed_decay = 10; // speed = speed - (speed / speed_decay);
 
-int speedx = 10; // speed = speed + (speed / speedx)
+// not sure, but max pwm might be 255? With 20V we don't want to go over 153.
+int max_speed = 96; 
+
+// speedx 1 doubles the speed
+int default_speedx = 1;
+int speedx = default_speedx; // speed = speed + (speed / speedx)
 int l_motor_speed = 0; // motor 1 is left
 int r_motor_speed = 0; // motor 2 is right
 
@@ -91,52 +98,53 @@ void buggy_move(char *sdir)
 {
   l_motor_speed = 0;
   r_motor_speed = 0; 
+  int raws = 48;
   int hit_ok = 1; // default to getting a hit
   if (sdir == "left")
     {
-      l_motor_speed = -32;
-      r_motor_speed = 32; 
+      l_motor_speed = -(raws/1.1);
+      r_motor_speed = raws/1.1; 
     }
   else if (sdir == "slight_f_left")
     {
-      l_motor_speed = -16;
-      r_motor_speed = 32;
-    }
-  else if (sdir == "slight_b_left")
-    {
-      l_motor_speed = -32;
-      r_motor_speed = 16;
+      l_motor_speed = -(raws/1.5);
+      r_motor_speed = raws;
     }
   else if (sdir == "right")
     {
-      l_motor_speed = 32;
-      r_motor_speed = -32;
+        l_motor_speed = raws;
+      r_motor_speed = -(raws);
     }
   else if (sdir == "slight_f_right")
     {
-      l_motor_speed = 32;
-      r_motor_speed = -16;
+      l_motor_speed = raws;
+      r_motor_speed = -(raws/1.5);
       // motor1.setSpeed(32);  // Motor 1 left forward
       // motor2.setSpeed(-16); // Motor 2 right back
     }
+  else if (sdir == "slight_b_left")
+    {
+      l_motor_speed = raws/2.1; // 16;
+      r_motor_speed = -(raws/2); //-32;
+    }
   else if (sdir == "slight_b_right")
     {
-      l_motor_speed = 16;
-      r_motor_speed = -32;
+      l_motor_speed = -(raws/2); // -24; // -32;
+      r_motor_speed = raws/2.1; // 16;
       // motor1.setSpeed(16);  // Motor 1 left forward
       // motor2.setSpeed(-32); // Motor 2 right back
     }
   else if (sdir == "forward")
     {
-      l_motor_speed = 16;
-      r_motor_speed = 16;
+      l_motor_speed = raws/2;
+      r_motor_speed = raws/2;
       // motor1.setSpeed(16);  // Motor 1 forward
       //motor2.setSpeed(16);  // Motor 2 forward
     }
   else if (sdir == "backward")
     {
-      l_motor_speed = -16;
-      r_motor_speed = -16;
+      l_motor_speed = -(raws/2);
+      r_motor_speed = -(raws/2);
       // motor1.setSpeed(-16);  // Motor 1 back
       // motor2.setSpeed(-16);  // Motor 2 back
     }
@@ -152,6 +160,8 @@ void buggy_move(char *sdir)
       // compensate based on the speedx multiplier
       l_motor_speed = l_motor_speed + (l_motor_speed / speedx);
       r_motor_speed = r_motor_speed + (r_motor_speed / speedx);
+      if (l_motor_speed > 64) l_motor_speed = 64;
+      if (r_motor_speed > 64) r_motor_speed = 64;
       motor1.setSpeed(l_motor_speed);
       motor2.setSpeed(r_motor_speed);
     }
@@ -169,8 +179,12 @@ void loop() {
   // arduino-cli monitor --raw -p /dev/ttyACM0 -b arduino:avr:uno
   // 
   avail_chars = Serial.available();
-  if (avail_chars > 0 && avail_chars < 255) {                // check for incoming serial data
-    bytes_read = Serial.readBytes(inbuff, avail_chars);  // read all bytes
+  if (avail_chars > 0) { // check for incoming serial data
+    if (avail_chars > 255)
+      {
+        avail_chars = 255; // I wonder what happens to the other chars? Next loop maybe?
+      }
+    bytes_read = Serial.readBytes(inbuff, avail_chars);  // read all bytes, or max 255
 
     // inbuff[1] = 0; // null terminate at [1], trim to length 1.
     inbuff[bytes_read] = 0; // null terminate at index bytes_read 
@@ -224,6 +238,23 @@ void loop() {
       {
         buggy_move("stop");
       }
+    else if (inbuff[0] == 's')
+      {
+        // 2024-08-22 this isn't working.
+        speedx = default_speedx;
+        Serial.println("Enter a single digit:");
+        char nums[] = "0123456789";
+        String instr = Serial.readString();
+        instr.toCharArray(inbuff, 255);
+        char *num_ptr = strchr(nums, inbuff[0]);
+        if (num_ptr != NULL)
+          {
+            int user_speed = atoi(inbuff[0]); // ?need to #include <stdlib.h>
+            if (user_speed >= 0 && user_speed <= 3) speedx = 15;
+            else if (user_speed > 2 && user_speed <= 7) speedx = 5;
+            else if (user_speed > 7) speedx = 1;
+          }
+      }
   }
   delay(250);
   // slow down over time
@@ -232,6 +263,11 @@ void loop() {
   if (r_motor_speed != 0) r_motor_speed = r_motor_speed - (r_motor_speed / speed_decay);
   if (abs(r_motor_speed) < min_speed) r_motor_speed = 0;
   // set the new speed
+  if (l_motor_speed != 0 && r_motor_speed != 0)
+    {
+      sprintf(pbuff,"left: %d right: %d\n\r", l_motor_speed, r_motor_speed);
+      Serial.println(pbuff);
+    }
   motor1.setSpeed(l_motor_speed);
   motor2.setSpeed(r_motor_speed);
 }
