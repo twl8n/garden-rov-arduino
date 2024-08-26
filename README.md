@@ -359,3 +359,12 @@ If you are ssh'd into the UGV's Pi:
 `scp buggyv3/build/arduino.avr.uno/buggyv3.ino.hex ./saved_buggyv3.ino.hex`
 
 `arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno -i saved_buggyv3.ino.hex`
+
+# Useful to know.
+
+The Arduino libraries on the Mac are in the Apple standard location. If your username is `zeus` and you want
+the Wire library:
+
+`/Users/zeus/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/libraries/Wire
+
+This info can be gleaned from the compiler ouput.

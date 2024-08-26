@@ -1,19 +1,20 @@
-// todo
-// set turning, forward, backing flags
-// decrease turns to straight forward or back
-// turning use different min speed, maybe different speed decay
-// need dynamic speed multiplier
-// is keypad 3 "turn the front right" or "back up to the right"? I think back+right.
-
-// Continuous drive strategy (vs V2 which was "drive 500 ms, stop motors, await next command".
-// Continue driving, maybe forward, maybe slowly revert to forward or slow down?
-// Buffer commands and support the cursor keys.
-
-// Emacs, open buggyv3.ino
-// arduino-cli compile -e --fqbn arduino:avr:uno .
-// terminal 1:
-// cd src/Arduino/buggyv3/build/arduino.avr.uno
 /*
+  todo
+  set turning, forward, backing flags
+  decrease turns to straight forward or back
+  turning use different min speed, maybe different speed decay
+  need dynamic speed multiplier
+  is keypad 3 "turn the front right" or "back up to the right"? I think back+right.
+
+  Continuous drive strategy (vs V2 which was "drive 500 ms, stop motors, await next command".
+  Continue driving, maybe forward, maybe slowly revert to forward or slow down?
+  Buffer commands and support the cursor keys.
+
+  Emacs, open buggyv3.ino
+  arduino-cli compile -e --fqbn arduino:avr:uno .
+  terminal 1:
+  cd src/Arduino/buggyv3/build/arduino.avr.uno
+
   When directly connected (vs going through RPi)
   > arduino-cli board list
   Port                            Protocol Type              Board Name                FQBN             Core
@@ -21,43 +22,38 @@
   arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
   arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno
 
-*/
+  When working via intermediate RPi or other computer:
+  scp buggyv3.ino.hex raspberrypi.local:
+  terminal 2:
+  ssh raspberrypi.local
+  arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggyv3.ino.hex
+  arduino-cli monitor --raw -p /dev/ttyACM0 -b arduino:avr:uno
 
-// scp buggyv3.ino.hex raspberrypi.local:
-// terminal 2:
-// ssh raspberrypi.local
-// arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggyv3.ino.hex
-// arduino-cli monitor --raw -p /dev/ttyACM0 -b arduino:avr:uno
-//
-// MDD10 both err1 and err2 LEDs are on when USB plugged in: blown fuse in the power in to the MDD10 board
-//
-/* This example shows how to drive 2 motors using the PWM and DIR pins with
-   2-channel motor driver.
+  MDD10 both err1 and err2 LEDs are on when USB plugged in: blown fuse in the power in to the MDD10 board
 
-   Jumpers in factory defaults
-   PWM1 D9
-   DIR1 D8
+  This example shows how to drive 2 motors using the PWM and DIR pins with
+  2-channel motor driver.
 
-   PWM2 D11
-   DIR2 D13
+  Jumpers in factory defaults
+  PWM1 D9
+  DIR1 D8
+
+  PWM2 D11
+  DIR2 D13
 */
 
 #include "CytronMotorDriver.h"
 #include <Servo.h>
 #include <Wire.h>
 
-byte xbyte = 0;
+// This must match camera_servo.ino
+int client_address = 2; // The Wire lib casts this to uint8_t
 
+byte xbyte = 0;
 
 // Configure the motor driver.
 CytronMD motor1(PWM_DIR, 9, 8);  // Defaults jumpers 9,8
 CytronMD motor2(PWM_DIR, 11, 13); // Default jumpers 11, 13
-
-Servo ud_servo; // up down servo
-Servo lr_servo; // left right
-
-int ud_last_pos = 90;
-int lr_last_pos = 90;
 
 size_t avail_chars = 0;
 size_t bytes_read = 0;
@@ -222,6 +218,45 @@ void buggy_move(char *sdir)
     }
 }
 
+void old_send_msg(char *msg) {
+  if (xbyte < 25) {
+    sprintf(pbuff, "writing to device 4: %x\n\r", xbyte);
+    Serial.println(pbuff);
+    Wire.beginTransmission(4); // transmit to device #4
+    Wire.write("x is ");       // sends five bytes
+    Wire.write(xbyte);         // sends one byte
+    Wire.endTransmission();    // stop transmitting
+    
+    sprintf(pbuff, "sizeof int: %d sizeof byte: %d sizeof string: %d\n\r", 
+            sizeof(l_motor_speed),
+            sizeof(xbyte),
+            sizeof("x is "));
+    Serial.println(pbuff);
+    xbyte++;
+  }
+}
+
+void send_msg(char *msg)
+{
+  int bytes_written = 0;
+  byte tiny_msg = 'x';
+  if (msg == "down") {
+    tiny_msg = 'd';
+  } else if (msg == "up") {
+    tiny_msg = 'u';
+  } else if (msg == "left") {
+    tiny_msg = 'l';
+  } else if (msg == "right") {
+    tiny_msg = 'r';
+  }    
+
+  Wire.beginTransmission(client_address); // transmit to client
+  bytes_written = Wire.write(tiny_msg);        // sends one byte
+  Wire.endTransmission();    // stop transmitting
+  sprintf(pbuff, "writing: %c to device: %d bytes_written: %d\n\r", (char)tiny_msg, client_address, bytes_written);
+  Serial.print(pbuff);
+}
+
 // Serial.readBytes(inbuff, 1);  // read 1 bytes
 // old read 1 char
 // inbuff[0] = Serial.read();
@@ -312,47 +347,30 @@ void loop() {
       }
     else if (strstr(inbuff, LEFT_ARROW) != NULL)
       {
-        // camera servo left
+        send_msg("left");
       }
     else if (strstr(inbuff, RIGHT_ARROW) != NULL)
       {
-        // camera servo left
+        send_msg("right");
       }
     else if (strstr(inbuff, DOWN_ARROW) != NULL)
       {
-        // camera servo down, relative to server orientation
-        if (ud_last_pos < 160)
-          {
-            ud_last_pos += 20;
-          }
-        else
-          {
-            ud_last_pos = 180;
-          }
-        sprintf(pbuff, "servo down %d\n\r", ud_last_pos);
-        Serial.println(pbuff);
-        ud_servo.write(ud_last_pos);
-        // ud_servo.write(90);
+        send_msg("down");
       }
     else if (strstr(inbuff, UP_ARROW) != NULL)
       {
-        // camera servo up, relative to servo orientation
-        if (ud_last_pos > 20)
-          {
-            ud_last_pos -= 20;
-          }
-        else
-          {
-            ud_last_pos = 0;
-          }
-        sprintf(pbuff, "servo up %d\n\r", ud_last_pos);
-        Serial.println(pbuff);
-        ud_servo.write(ud_last_pos);
-        // ud_servo.write(90);
+        send_msg("up");
       }
   }
+  /*
+    Necessary for arrow keys to work, with the current naive serial read.
+    Maybe we need to properly manage the serial input buffer by accumulating
+    
+    Also: the slowing code below needs its own timer if we remove the delay here.
+  */
   delay(250);
-  // slow down over time
+
+  // slow down over time, depends on the delay above
   if (l_motor_speed != 0) l_motor_speed = l_motor_speed - (l_motor_speed / speed_decay);
   if (abs(l_motor_speed) < min_speed) l_motor_speed = 0;
   if (r_motor_speed != 0) r_motor_speed = r_motor_speed - (r_motor_speed / speed_decay);
@@ -365,21 +383,4 @@ void loop() {
     }
   motor1.setSpeed(l_motor_speed);
   motor2.setSpeed(r_motor_speed);
-
-  if (xbyte < 25) {
-    sprintf(pbuff, "writing to device 4: %x\n\r", xbyte);
-    Serial.println(pbuff);
-    Wire.beginTransmission(4); // transmit to device #4
-    Wire.write("x is ");       // sends five bytes
-    Wire.write(xbyte);         // sends one byte
-    Wire.endTransmission();    // stop transmitting
-    
-    sprintf(pbuff, "sizeof int: %d sizeof byte: %d sizeof string: %d\n\r", 
-            sizeof(l_motor_speed),
-            sizeof(xbyte),
-            sizeof("x is "));
-    Serial.println(pbuff);
-    xbyte++;
-    delay(500);
-  }
 }

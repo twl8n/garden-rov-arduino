@@ -17,27 +17,35 @@
 
 Servo ud_servo; // up down servo
 Servo lr_servo; // left right
+int ud_pin = 2;
+int lr_pin = 3;
+
+// This must match buggyv3.ino
+int client_address = 2; // The Wire lib casts this to uint8_t
+
+int ud_last_pos = 90;
+int lr_last_pos = 90;
+char cin = 'x';
+char pbuff[255] = "";
 
 void setup()
 {
-  Wire.begin(4);                // join i2c bus with address #4
-  Wire.onReceive(receiveEvent); // register event
+  Wire.begin(client_address);   // join i2c bus as a client
+  Wire.onReceive(receiveEvent); // register event handler function
   Serial.begin(9600);           // start serial for output
 
-  ud_servo.attach(2, 1000, 2000);
+  ud_servo.attach(ud_pin, 1000, 2000);
+  lr_servo.attach(lr_pin, 1000, 2000);
   ud_servo.write(90);
-  delay(1000);
-  ud_servo.write(170);
+  lr_servo.write(90);
 }
 
 void loop()
 {
-  delay(100);
+  delay(100); // do we need this delay?
 }
 
-// function that executes whenever data is received from master
-// this function is registered as an event, see setup()
-void receiveEvent(int howMany)
+void old_receiveEvent(int howMany)
 {
   char pbuff[255] = "";
   sprintf(pbuff, "in receiveEvent, howMany: %d\n", howMany);
@@ -50,4 +58,68 @@ void receiveEvent(int howMany)
   int xx = Wire.read();    // receive byte as an integer
   sprintf(pbuff, "byte as byte: %x\n", xx);
   Serial.println(pbuff);      // print the integer
+}
+
+void servo_move(char smsg)
+{
+  int smin = 0;
+  int smax = 180;
+  int sincrement = 10;
+  if (smsg == 'u') {
+    // camera servo up, relative to servo orientation
+    if (ud_last_pos > (smin + sincrement))
+      {
+        ud_last_pos -= sincrement;
+      }
+    else
+      {
+        ud_last_pos = smin;
+      }
+  } else if (smsg == 'd') {
+    // camera servo down, relative to server orientation
+    if (ud_last_pos < (smax - sincrement))
+      {
+        ud_last_pos += sincrement;
+      }
+    else
+      {
+        ud_last_pos = smax;
+      }
+  } else if (smsg == 'l') {
+    // camera servo left, relative to server orientation
+    if (lr_last_pos < (smax + sincrement))
+      {
+        lr_last_pos += sincrement;
+      }
+    else
+      {
+        lr_last_pos = smax;
+      }
+  } else if (smsg == 'r') {
+    // camera servo left, relative to server orientation
+    if (lr_last_pos > (smin + sincrement))
+      {
+        lr_last_pos -= sincrement;
+      }
+    else
+      {
+        lr_last_pos = smin;
+      }
+  }
+  sprintf(pbuff, "smsg: %d %c ud servo %d lr servo: %d\n", (int)smsg, (char)smsg, ud_last_pos, lr_last_pos);
+  Serial.print(pbuff);
+  ud_servo.write(ud_last_pos);
+  lr_servo.write(lr_last_pos);
+}
+
+/*
+  Apparently not mentioned in the docs: the I2C internal buffer is 32 bytes.
+*/
+
+void receiveEvent(int howMany)
+{
+  cin = Wire.read();        // receive byte as a character
+  // sprintf(pbuff, "howMany: %d cin: %x cin: %c\n", howMany, cin, (char)cin);
+  // Serial.print(pbuff);
+  servo_move(cin);
 }
