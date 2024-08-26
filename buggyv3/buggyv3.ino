@@ -10,9 +10,19 @@
 // Buffer commands and support the cursor keys.
 
 // Emacs, open buggyv3.ino
-// arduino-cli compile --fqbn arduino:avr:uno .
+// arduino-cli compile -e --fqbn arduino:avr:uno .
 // terminal 1:
 // cd src/Arduino/buggyv3/build/arduino.avr.uno
+/*
+  When directly connected (vs going through RPi)
+  > arduino-cli board list
+  Port                            Protocol Type              Board Name                FQBN             Core
+  /dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno               arduino:avr:uno  arduino:avr
+  arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
+  arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno
+
+*/
+
 // scp buggyv3.ino.hex raspberrypi.local:
 // terminal 2:
 // ssh raspberrypi.local
@@ -33,6 +43,21 @@
 */
 
 #include "CytronMotorDriver.h"
+#include <Servo.h>
+#include <Wire.h>
+
+byte xbyte = 0;
+
+
+// Configure the motor driver.
+CytronMD motor1(PWM_DIR, 9, 8);  // Defaults jumpers 9,8
+CytronMD motor2(PWM_DIR, 11, 13); // Default jumpers 11, 13
+
+Servo ud_servo; // up down servo
+Servo lr_servo; // left right
+
+int ud_last_pos = 90;
+int lr_last_pos = 90;
 
 size_t avail_chars = 0;
 size_t bytes_read = 0;
@@ -76,10 +101,6 @@ char SHIFT_LEFT_ARROW[7] = "\033\133\061\073\062\104";
 char SHIFT_DOWN_ARROW[7] = "\033\133\061\073\062\102";
 char SHIFT_RIGHT_ARROW[7] = "\033\133\061\073\062\103";
 
-// Configure the motor driver.
-CytronMD motor1(PWM_DIR, 9, 8);  // Defaults jumpers 9,8
-CytronMD motor2(PWM_DIR, 11, 13); // Default jumpers 11, 13
-
 // Run the pattern once.
 // Reset on the Cytron shield is same as reset on the Arduino: re-run this script.
 void setup() {
@@ -89,8 +110,42 @@ void setup() {
   Serial.println(" j k \n\r");
   Serial.println("n m ,\n\r");
 
+  
+  /*
+    Don't use any of the motor driver pins for other stuff: 8, 9, 11, 13
+    Motor PWM: 9, 11
+    Motor direction: 8, 13
+    I guess "digitial" pins are TTL level: 2, 4, 7, 8, 12, 13
+    The uno seems to have 6 PWM pins: 3, 5, 6, 9, 10, 11
+
+    unused PWM pins: 3, 5, 6, 10
+  
+    https://docs.arduino.cc/tutorials/generic/secrets-of-arduino-pwm/
+  
+    OC0A	6
+    OC0B	5
+    OC1A	9
+    OC1B	10
+    OC2A	11
+    OC2B	3
+
+    https://forum.arduino.cc/t/simultaneous-pwm-to-several-pins/254952/2
+
+    Doesn't seem that you can do analogWrites to pins 3, 5 & 6 in PORTD or 9, 10 &11 in PORTB. It's a bit
+    setting thing, so you get highs and lows only.
+
+    The PWM outputs generated on pins 5 and 6 will have higher-than-expected duty cycles. This is because of
+    interactions with the millis() and delay() functions, which share the same internal timer used to generate
+    those PWM outputs. This will be noticed mostly on low duty-cycle settings (e.g. 0 - 10) and may result in
+    a value of 0 not fully turning off the output on pins 5 and 6.
+  */
+
+  // Enabling the servo pwm disables the left motor, motor 1
+  // ud_servo.attach(6, 1000, 2000);
   motor1.setSpeed(0);     // Motor 1 stops.
   motor2.setSpeed(0);     // Motor 2 stops.
+
+  Wire.begin(); // join i2c bus (address optional for master)
 }
 
 // Assume the calling code will turn the motors off.
@@ -202,11 +257,11 @@ void loop() {
     
     //  would be stop, if we decide to support it.
     
-    if (inbuff[0] == 'j' || inbuff[0] == '4' || strstr(inbuff, LEFT_ARROW) != NULL)
+    if (inbuff[0] == 'j' || inbuff[0] == '4')
       {
         buggy_move("left");
       }
-    else if (inbuff[0] == 'u' || inbuff[0] == '7' || strstr(inbuff, SHIFT_LEFT_ARROW) != NULL)
+    else if (inbuff[0] == 'u' || inbuff[0] == '7')
       {
         buggy_move("slight_f_left");
       }
@@ -226,7 +281,7 @@ void loop() {
       {
         buggy_move("slight_b_right");
       }
-    else if (inbuff[0] == 'i' || inbuff[0] == '8' || strstr(inbuff, UP_ARROW) != NULL)
+    else if (inbuff[0] == 'i' || inbuff[0] == '8')
       {
         buggy_move("forward");
       }
@@ -255,6 +310,46 @@ void loop() {
             else if (user_speed > 7) speedx = 1;
           }
       }
+    else if (strstr(inbuff, LEFT_ARROW) != NULL)
+      {
+        // camera servo left
+      }
+    else if (strstr(inbuff, RIGHT_ARROW) != NULL)
+      {
+        // camera servo left
+      }
+    else if (strstr(inbuff, DOWN_ARROW) != NULL)
+      {
+        // camera servo down, relative to server orientation
+        if (ud_last_pos < 160)
+          {
+            ud_last_pos += 20;
+          }
+        else
+          {
+            ud_last_pos = 180;
+          }
+        sprintf(pbuff, "servo down %d\n\r", ud_last_pos);
+        Serial.println(pbuff);
+        ud_servo.write(ud_last_pos);
+        // ud_servo.write(90);
+      }
+    else if (strstr(inbuff, UP_ARROW) != NULL)
+      {
+        // camera servo up, relative to servo orientation
+        if (ud_last_pos > 20)
+          {
+            ud_last_pos -= 20;
+          }
+        else
+          {
+            ud_last_pos = 0;
+          }
+        sprintf(pbuff, "servo up %d\n\r", ud_last_pos);
+        Serial.println(pbuff);
+        ud_servo.write(ud_last_pos);
+        // ud_servo.write(90);
+      }
   }
   delay(250);
   // slow down over time
@@ -270,4 +365,14 @@ void loop() {
     }
   motor1.setSpeed(l_motor_speed);
   motor2.setSpeed(r_motor_speed);
+
+  sprintf(pbuff, "writing to device 4: %x\n\r", xbyte);
+  Serial.println(pbuff);
+  Wire.beginTransmission(4); // transmit to device #4
+  Wire.write("x is ");       // sends five bytes
+  Wire.write(xbyte);         // sends one byte
+  Wire.endTransmission();    // stop transmitting
+
+  xbyte++;
+  delay(500);
 }

@@ -340,3 +340,22 @@ Installing Servo@1.2.2...
 Installed Servo@1.2.2
 ```
 
+# Reverting quickly
+
+Compile and save build files locally.
+
+`arduino-cli compile -e --fqbn arduino:avr:uno .`
+
+Save the good .ino.hex file outside the build directory, in safe place.
+If you are connected to the Arduino directly from your desktop computer:
+
+`cp buggyv3/build/arduino.avr.uno/buggyv3.ino.hex ./saved_buggyv3.ino.hex`
+
+`arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggy.ino.hex`
+
+
+If you are ssh'd into the UGV's Pi:
+
+`scp buggyv3/build/arduino.avr.uno/buggyv3.ino.hex ./saved_buggyv3.ino.hex`
+
+`arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno -i saved_buggyv3.ino.hex`
