@@ -12,14 +12,22 @@
 
 */
 
-
 #include <Wire.h>
+#include <Servo.h>
+
+Servo ud_servo; // up down servo
+Servo lr_servo; // left right
 
 void setup()
 {
   Wire.begin(4);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent); // register event
   Serial.begin(9600);           // start serial for output
+
+  ud_servo.attach(2, 1000, 2000);
+  ud_servo.write(90);
+  delay(1000);
+  ud_servo.write(170);
 }
 
 void loop()

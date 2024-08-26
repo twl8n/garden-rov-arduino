@@ -366,13 +366,20 @@ void loop() {
   motor1.setSpeed(l_motor_speed);
   motor2.setSpeed(r_motor_speed);
 
-  sprintf(pbuff, "writing to device 4: %x\n\r", xbyte);
-  Serial.println(pbuff);
-  Wire.beginTransmission(4); // transmit to device #4
-  Wire.write("x is ");       // sends five bytes
-  Wire.write(xbyte);         // sends one byte
-  Wire.endTransmission();    // stop transmitting
-
-  xbyte++;
-  delay(500);
+  if (xbyte < 25) {
+    sprintf(pbuff, "writing to device 4: %x\n\r", xbyte);
+    Serial.println(pbuff);
+    Wire.beginTransmission(4); // transmit to device #4
+    Wire.write("x is ");       // sends five bytes
+    Wire.write(xbyte);         // sends one byte
+    Wire.endTransmission();    // stop transmitting
+    
+    sprintf(pbuff, "sizeof int: %d sizeof byte: %d sizeof string: %d\n\r", 
+            sizeof(l_motor_speed),
+            sizeof(xbyte),
+            sizeof("x is "));
+    Serial.println(pbuff);
+    xbyte++;
+    delay(500);
+  }
 }
