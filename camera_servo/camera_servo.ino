@@ -1,5 +1,9 @@
 /*
-  wire receiver
+  wire client, receiver. The host controller is busy controlling motors, so we control the camera gimbal
+  servos from here. The host is getting commands, and passing them to us.
+
+  todo:
+  send debug/info/data back so we don't need a monitor for day to day work here
 
   > arduino-cli board list
   Port                            Protocol Type              Board Name                FQBN             Core
@@ -27,11 +31,13 @@ int ud_last_pos = 90;
 int lr_last_pos = 90;
 char cin = 'x';
 char pbuff[255] = "";
+char curr_msg[255] = "";
 
 void setup()
 {
   Wire.begin(client_address);   // join i2c bus as a client
   Wire.onReceive(receiveEvent); // register event handler function
+  Wire.onRequest(requestEvent);
   Serial.begin(9600);           // start serial for output
 
   ud_servo.attach(ud_pin, 1000, 2000);
@@ -58,6 +64,16 @@ void old_receiveEvent(int howMany)
   int xx = Wire.read();    // receive byte as an integer
   sprintf(pbuff, "byte as byte: %x\n", xx);
   Serial.println(pbuff);      // print the integer
+}
+
+// overwrite a string with nulls.
+// I don't know how or if the compiler initializes char arrays, so force an array of nulls, because.
+void null_string(char *thestr)
+{
+  for(int xx = 0; xx < sizeof(thestr); xx++)
+    {
+      thestr[xx] = 0;
+    }
 }
 
 void servo_move(char smsg)
@@ -107,6 +123,9 @@ void servo_move(char smsg)
       }
   }
   sprintf(pbuff, "smsg: %d %c ud servo %d lr servo: %d\n", (int)smsg, (char)smsg, ud_last_pos, lr_last_pos);
+  null_string(curr_msg);
+  sprintf(curr_msg, "ud servo: %d lr servo: %d", ud_last_pos, lr_last_pos);
+  // strcpy(curr_msg, pbuff); // this will be truncated at 31 chars
   Serial.print(pbuff);
   ud_servo.write(ud_last_pos);
   lr_servo.write(lr_last_pos);
@@ -122,4 +141,12 @@ void receiveEvent(int howMany)
   // sprintf(pbuff, "howMany: %d cin: %x cin: %c\n", howMany, cin, (char)cin);
   // Serial.print(pbuff);
   servo_move(cin);
+}
+
+void requestEvent()
+{
+  curr_msg[31] = 0;
+  sprintf(pbuff, "cmlen: %d cm: %s\n", strlen(curr_msg), curr_msg);
+  Serial.print(pbuff);
+  Wire.write(curr_msg, 32);
 }

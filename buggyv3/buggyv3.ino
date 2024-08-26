@@ -1,29 +1,40 @@
 /*
   todo
+  1- buffer multi character escape sequences so we don't need a delay
+  2- add a speed-decrease timer do we don't need a delay
+  3- remove delay after 1 and 2.
   set turning, forward, backing flags
   decrease turns to straight forward or back
   turning use different min speed, maybe different speed decay
   need dynamic speed multiplier
-  is keypad 3 "turn the front right" or "back up to the right"? I think back+right.
+  x is keypad 3 "turn the front right" or "back up to the right"? I think back+right.
 
   Continuous drive strategy (vs V2 which was "drive 500 ms, stop motors, await next command".
   Continue driving, maybe forward, maybe slowly revert to forward or slow down?
   Buffer commands and support the cursor keys.
 
+  Compile, upload, monitor notes.
   Emacs, open buggyv3.ino
   arduino-cli compile -e --fqbn arduino:avr:uno .
-  terminal 1:
-  cd src/Arduino/buggyv3/build/arduino.avr.uno
 
   When directly connected (vs going through RPi)
   > arduino-cli board list
   Port                            Protocol Type              Board Name                FQBN             Core
   /dev/cu.usbmodem2101            serial   Serial Port (USB) Arduino Uno               arduino:avr:uno  arduino:avr
+
+  terminal (separate terminal for the other microcontroller):
+  cd src/Arduino/buggyv3/
   arduino-cli upload -p /dev/cu.usbmodem2101 --fqbn arduino:avr:uno .
   arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno
 
+  (Actually, create single command bash scripts in the local directory, especially if you have a unified zsh
+  command history, which I do. Or start using make.)
+
   When working via intermediate RPi or other computer:
+  terminal 1:
+  cd src/Arduino/buggyv3/build/arduino.avr.uno
   scp buggyv3.ino.hex raspberrypi.local:
+
   terminal 2:
   ssh raspberrypi.local
   arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno -i buggyv3.ino.hex
@@ -236,9 +247,26 @@ void old_send_msg(char *msg) {
   }
 }
 
+void read_client(char *read_location)
+{
+  char inbuff[255] = "";
+  int xx = 0;
+  while (Wire.available())
+    {
+      inbuff[xx++] = Wire.read();
+    }
+  inbuff[xx] = 0;
+  if (xx > 0)
+    {
+      sprintf(pbuff, "%s %s\n\r", read_location, inbuff);
+      Serial.print(pbuff);
+    }
+}
+
 void send_msg(char *msg)
 {
   int bytes_written = 0;
+  int bytes_returned = 0;
   byte tiny_msg = 'x';
   if (msg == "down") {
     tiny_msg = 'd';
@@ -251,10 +279,18 @@ void send_msg(char *msg)
   }    
 
   Wire.beginTransmission(client_address); // transmit to client
-  bytes_written = Wire.write(tiny_msg);        // sends one byte
-  Wire.endTransmission();    // stop transmitting
-  sprintf(pbuff, "writing: %c to device: %d bytes_written: %d\n\r", (char)tiny_msg, client_address, bytes_written);
+  bytes_written = Wire.write(tiny_msg);   // we only send one byte
+  Wire.endTransmission();                 // stop transmitting
+  /*
+    Instead of assuming 32 chars is enough, could send a request for "how many bytes do you want to send?"
+    Then "send me that number of bytes". I assume it would come in chunks of 32 bytes. Unclear if multiiple
+    requests can be sent followed by multiple reads, or if each request must be followed by a read.
+   */
+  bytes_returned = Wire.requestFrom(client_address, 32); // 32 including the null termination.
+  sprintf(pbuff, "writing: %c to device: %d bytes_written: %d bytes_returned: %d\n\r",
+          (char)tiny_msg, client_address, bytes_written, bytes_returned);
   Serial.print(pbuff);
+  read_client("send_msg");
 }
 
 // Serial.readBytes(inbuff, 1);  // read 1 bytes
@@ -263,6 +299,9 @@ void send_msg(char *msg)
 // bytes_read = 1; // well, it is true.
 
 void loop() {
+
+  read_client("loop"); // read and print info message
+  
   //
   // Must have the monitor in --raw to read without buffering until cr/lf.
   // arduino-cli monitor --raw -p /dev/cu.usbmodem2101 -b arduino:avr:uno
