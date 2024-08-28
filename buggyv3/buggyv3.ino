@@ -3,11 +3,16 @@
   1- buffer multi character escape sequences so we don't need a delay
   2- add a speed-decrease timer do we don't need a delay
   3- remove delay after 1 and 2.
+  4- make speed decrease relative to raw speed: faster decrease for faster speeds
+  remove "writing ..." debug from wire iic code.
+  rear turning is far slower than forward turning, needs fixing.
   set turning, forward, backing flags
   decrease turns to straight forward or back
   turning use different min speed, maybe different speed decay
-  need dynamic speed multiplier
+  x need dynamic speed multiplier
   x is keypad 3 "turn the front right" or "back up to the right"? I think back+right.
+  x implement s and f commands to change speedx multiplier
+  x fix speedx to be a reasonable range
 
   Continuous drive strategy (vs V2 which was "drive 500 ms, stop motors, await next command".
   Continue driving, maybe forward, maybe slowly revert to forward or slow down?
@@ -77,7 +82,7 @@ int is_forward = 0;
 int is_backing = 0;
 
 // When turning, the min speed should be closer to 16.
-int min_speed = 20; // below this, we just go to zero.
+int min_speed = 15; // below this, we just go to zero.
 int turning_min_speed = 14;
 
 // Large numbers, like 20, decay too slow.
@@ -155,12 +160,20 @@ void setup() {
   Wire.begin(); // join i2c bus (address optional for master)
 }
 
-// Assume the calling code will turn the motors off.
+/*
+  Assume the calling code will turn the motors off, gradually.
+
+  Raw speed and speed decrease need to be linked. When the buggy is turning faster it will turn further at a
+  higher speed in the same elapsed time, because the speed decrease isn't (yet) relative to the speed.
+*/
 void buggy_move(char *sdir)
 {
   l_motor_speed = 0;
   r_motor_speed = 0; 
-  int raws = 48;
+  // Was simply 48, with no compensation
+  int raws = 32;
+  raws += (raws / speedx);
+
   int hit_ok = 1; // default to getting a hit
   if (sdir == "left")
     {
@@ -217,35 +230,25 @@ void buggy_move(char *sdir)
     }
   else hit_ok = 0;
   
- if (hit_ok)
+  if (hit_ok)
     {
-      // compensate based on the speedx multiplier
-      l_motor_speed = l_motor_speed + (l_motor_speed / speedx);
-      r_motor_speed = r_motor_speed + (r_motor_speed / speedx);
-      if (l_motor_speed > 64) l_motor_speed = 64;
-      if (r_motor_speed > 64) r_motor_speed = 64;
+      int lm_sign = (l_motor_speed > 0) - (l_motor_speed < 0);
+      int rm_sign = (r_motor_speed > 0) - (r_motor_speed < 0);
+      /*
+        C sign function: (x > 0) - (x < 0)
+        https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+      */
+      if (abs(l_motor_speed) > 64){
+        l_motor_speed = 64 * lm_sign;
+      }
+      if (abs(r_motor_speed) > 64) {
+        r_motor_speed = 64 * rm_sign;
+      }
       motor1.setSpeed(l_motor_speed);
       motor2.setSpeed(r_motor_speed);
     }
 }
 
-void old_send_msg(char *msg) {
-  if (xbyte < 25) {
-    sprintf(pbuff, "writing to device 4: %x\n\r", xbyte);
-    Serial.println(pbuff);
-    Wire.beginTransmission(4); // transmit to device #4
-    Wire.write("x is ");       // sends five bytes
-    Wire.write(xbyte);         // sends one byte
-    Wire.endTransmission();    // stop transmitting
-    
-    sprintf(pbuff, "sizeof int: %d sizeof byte: %d sizeof string: %d\n\r", 
-            sizeof(l_motor_speed),
-            sizeof(xbyte),
-            sizeof("x is "));
-    Serial.println(pbuff);
-    xbyte++;
-  }
-}
 
 void read_client(char *read_location)
 {
@@ -369,20 +372,20 @@ void loop() {
       }
     else if (inbuff[0] == 's')
       {
-        // 2024-08-22 this isn't working.
-        speedx = default_speedx;
-        Serial.println("Enter a single digit:");
-        char nums[] = "0123456789";
-        String instr = Serial.readString();
-        instr.toCharArray(inbuff, 255);
-        char *num_ptr = strchr(nums, inbuff[0]);
-        if (num_ptr != NULL)
-          {
-            int user_speed = atoi(inbuff[0]); // ?need to #include <stdlib.h>
-            if (user_speed >= 0 && user_speed <= 3) speedx = 15;
-            else if (user_speed > 2 && user_speed <= 7) speedx = 5;
-            else if (user_speed > 7) speedx = 1;
-          }
+        // slower
+        speedx += 1; // was  (speedx/2)+1;
+        sprintf(pbuff, "speedx: %d\n\r", speedx);
+        Serial.print(pbuff);
+      }
+    else if (inbuff[0] == 'f')
+      {
+        // faster
+        speedx -= 1; // was  (speedx/2)+1;
+        if (speedx < 1) {
+          speedx = 1;
+        }
+        sprintf(pbuff, "speedx: %d\n\r", speedx);
+        Serial.print(pbuff);
       }
     else if (strstr(inbuff, LEFT_ARROW) != NULL)
       {
