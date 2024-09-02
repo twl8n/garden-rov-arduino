@@ -76,3 +76,8 @@ Port                            Protocol Type              Board Name FQBN Core
 arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp32cam
 ```
 
+#### Device images
+
+![esp32-cam-mb](images/IMG_4222_2.JPG "ESP32-CAM-MB")
+
+
