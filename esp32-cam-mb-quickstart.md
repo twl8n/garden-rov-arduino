@@ -2,9 +2,13 @@
 arduino-cli core -h
 ```
 
-```arduino-cli core --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json```
+```console
+arduino-cli core --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+```
 
-```arduino-cli core search esp32```console
+```console
+arduino-cli core search esp32```cons
+ole
 
 ```console
 ID            Version Name
@@ -12,9 +16,15 @@ arduino:esp32 2.0.13  Arduino ESP32 Boards
 esp32:esp32   3.0.4   esp32
 ```
 
-`arduino-cli core install esp32:esp32`
+```console
+arduino-cli core install esp32:esp32
+```
 
-`arduino-cli core list`
+
+```console
+arduino-cli core list
+```
+
 
 ```console
 ID          Installed Latest Name
@@ -22,9 +32,15 @@ arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
 esp32:esp32 3.0.4     3.0.4  esp32
 ```
 
-`arduino-cli board search esp32`
+```console
+arduino-cli board search esp32
+```
 
-`arduino-cli board search esp32 | less`
+
+```console
+arduino-cli board search esp32 | less
+```
+
 
 ```console
 Board Name                                         FQBN                                               Platform ID
@@ -34,7 +50,10 @@ ALKS ESP32                                         esp32:esp32:alksesp32        
 ...
 ```
 
-`arduino-cli board list`
+```console
+arduino-cli board list
+```
+
 
 When the esp32 is not plugged into USB:
 
@@ -52,4 +71,7 @@ Port                            Protocol Type              Board Name FQBN Core
 /dev/cu.wlan-debug              serial   Serial Port       Unknown
 ```
 
-`arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp32cam`
+```console
+arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp32cam
+```
+
