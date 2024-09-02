@@ -1,12 +1,12 @@
-```console
+```bash
 arduino-cli core -h
 ```
 
-```console
+```bash
 arduino-cli core --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 ```
 
-```console
+```bash
 arduino-cli core search esp32
 ```
 
@@ -17,12 +17,12 @@ arduino:esp32 2.0.13  Arduino ESP32 Boards
 esp32:esp32   3.0.4   esp32
 ```
 
-```console
+```bash
 arduino-cli core install esp32:esp32
 ```
 
 
-```console
+```bash
 arduino-cli core list
 ```
 
@@ -33,12 +33,12 @@ arduino:avr 1.8.6     1.8.6  Arduino AVR Boards
 esp32:esp32 3.0.4     3.0.4  esp32
 ```
 
-```console
+```bash
 arduino-cli board search esp32
 ```
 
 
-```console
+```bash
 arduino-cli board search esp32 | less
 ```
 
@@ -51,7 +51,7 @@ ALKS ESP32                                         esp32:esp32:alksesp32        
 ...
 ```
 
-```console
+```bash
 arduino-cli board list
 ```
 
@@ -72,7 +72,7 @@ Port                            Protocol Type              Board Name FQBN Core
 /dev/cu.wlan-debug              serial   Serial Port       Unknown
 ```
 
-```console
+```bash
 arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp32cam
 ```
 
