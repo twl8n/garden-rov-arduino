@@ -78,6 +78,18 @@ arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp3
 
 #### Device images
 
+The ESP32-CAM MCU/camera board separated from the ESP32-CAM-MB programmer/USB:
+
 <img src="images/IMG_4222_2.JPG" alt="ESP32-CAM-MB" width="640"/>
+
+The ESP32-CAM camera ribbon cable latch pivots, unlike Raspberry PI and camera boards where the latch slides.
+
+Flip the latch up to open, and insert the camera's ribbon cable.
+
+Flip down to latch and secure.
+
+<img src="images/DSC_6992_2.JPG" alt="ribbon cable latch open" width="640">
+
+<img src="images/DSC_6996_2.JPG" alt="ribbon cable latch closed" width="640">
 
 
