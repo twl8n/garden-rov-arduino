@@ -78,6 +78,6 @@ arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp3
 
 #### Device images
 
-![<img src="images/IMG_4222_2.JPG" alt="ESP32-CAM-MB" width="1024" />]
+[<img src="images/IMG_4222_2.JPG" alt="ESP32-CAM-MB" width="1024"/>]
 
 
