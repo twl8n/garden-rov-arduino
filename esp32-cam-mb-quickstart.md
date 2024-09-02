@@ -7,8 +7,9 @@ arduino-cli core --additional-urls https://raw.githubusercontent.com/espressif/a
 ```
 
 ```console
-arduino-cli core search esp32```cons
-ole
+arduino-cli core search esp32
+```
+
 
 ```console
 ID            Version Name
