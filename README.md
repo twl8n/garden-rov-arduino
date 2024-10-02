@@ -1,6 +1,94 @@
 # garden-rov-arduino
 
-Unmanned guided vehicle (UGV) for garden cultivation, remote control via WiFi, featuring Arduino and Pi Zero W with streaming camera.
+Unmanned guided vehicle (UGV) for garden cultivation, remote control via WiFi, featuring Arduino and Pi Zero W with streaming camera. A second streaming camera is served by and ESP32-CAM-MB running a minimal http streaming camera. 
+
+See: https://github.com/twl8n/esp32-streaming-cam-ota
+
+At the current stage, the UGV is driving around. It doesn't yet have gardening cultivation attachments.
+
+The idea is that the UGV (with attachments) is outside in the hot sun. You're driving from the air conditioned
+comfort of your house. You have an ssh session where you drive via keyboard commands. You've got two open web
+browser windows with the streaming camera output from the UGV.
+
+<img src="images/IMG_4270.JPG" alt="gardenbot UGV" width="640">
+
+<img src="images/IMG_4271.JPG" alt="gardenbot UGV" width="640">
+
+# Once everything is working
+
+- ssh into the Raspberry pi. 
+- launch the camera video in the background, or use two ssh sessions
+- run the `arduino-cli` monitor in raw mode.
+
+`arduino-cli monitor --raw -p /dev/ttyACM0 -b arduino:avr:uno`
+
+The keypad and number keys drive the UGV. 
+`
+7 8 9 forward-left forward forward-right
+4 5 6         left  stop   right
+1 2 3    back-left  back   back-right
+`
+
+Arrow keys control the camera servos. Yes, you can read ansi terminal escape codes with an Arduino:
+   up-arrow - camera up
+ down-arrow - camera down
+ left-arrow - camera left
+right-arrow - camera right
+
+The 's' key slows the drive speed. The 'f' key makes the drive speed faster.
+
+# Launch the video server on the Raspberry Pi
+
+## install and config
+
+- Install MediamTX. 
+- Edit the mediamtx.yml to include the rpi camera path info.
+- Optional: edit the yaml file to includ your camera tuning file.
+
+## run and connect
+
+`
+./mediamtx
+`
+
+Enter the Raspberry Pi url in your favorite web browser:
+
+`http://192.168.x.x:8889/cam/`
+
+rtmp server
+https://github.com/bluenviron/mediamtx?tab=readme-ov-file
+
+is this in mediamtx.yml?
+api: yes
+
+To obtain a list of of active paths, run:
+curl http://127.0.0.1:9997/v3/paths/list
+
+possible to add tuning file?
+--tuning-file /usr/share/libcamera/ipa/rpi/vc4/imx219_noir.json
+
+worked:
+pi@raspberrypi:~$ grep -i tuning mediamtx.yml
+  # Tuning file
+  rpiCameraTuningFile: /usr/share/libcamera/ipa/rpi/vc4/imx219_noir.json
+
+webRTC works, low latency:
+http://192.168.x.x:8889/cam/
+
+works, low latency, opens ffplay window, grainy
+ffplay rtmp://raspberrypi.local:1935/cam -vf "setpts=N/30" -fflags nobuffer -flags low_delay -framedrop
+
+works, low latency, grainy
+ffplay rtsp://raspberrypi.local:8554/cam -vf "setpts=N/30" -fflags nobuffer -flags low_delay -framedrop
+
+MediaMTX open several listeners:
+2024/10/01 22:49:02 INF [RTSP] listener opened on :8554 (TCP), :8000 (UDP/RTP), :8001 (UDP/RTCP)
+2024/10/01 22:49:02 INF [RTMP] listener opened on :1935
+2024/10/01 22:49:02 INF [HLS] listener opened on :8888
+2024/10/01 22:49:02 INF [path cam] [RPI Camera source] started
+2024/10/01 22:49:02 INF [WebRTC] listener opened on :8889 (HTTP), :8189 (ICE/UDP)
+2024/10/01 22:49:02 INF [SRT] listener opened on :8890 (UDP)
+
 
 # Install arduino-cli on MacOS
 

@@ -1,3 +1,9 @@
+https://github.com/espressif
+
+https://github.com/espressif/arduino-esp32
+
+
+
 ```bash
 arduino-cli core -h
 ```
@@ -75,6 +81,42 @@ Port                            Protocol Type              Board Name FQBN Core
 ```bash
 arduino-cli monitor -p /dev/cu.usbserial-210 --config 115200 -b esp32:esp32:esp32cam
 ```
+
+--
+
+building /Users/twl/src/esp32-cam-min/CameraWebServer
+
+arduino-cli compile -e --fqbn esp32:esp32:esp32cam .
+
+arduino-cli upload -v -p /dev/cu.usbserial-210 --fqbn esp32:esp32:esp32cam .
+
+Full command:
+
+"/Users/twl/Library/Arduino15/packages/esp32/tools/esptool_py/4.6/esptool" --chip esp32 --port "/dev/cu.usbserial-210" --baud 460800  --before default_reset --after hard_reset write_flash  -z --flash_mode keep --flash_freq keep --flash_size keep 0x1000 "/private/var/folders/2m/m49tydvj599cf1yv8nk7f82m0000gn/T/arduino/sketches/AFE8B507A91E7CFA84208FDAFCC5A9A9/CameraWebServer.ino.bootloader.bin" 0x8000 "/private/var/folders/2m/m49tydvj599cf1yv8nk7f82m0000gn/T/arduino/sketches/AFE8B507A91E7CFA84208FDAFCC5A9A9/CameraWebServer.ino.partitions.bin" 0xe000 "/Users/twl/Library/Arduino15/packages/esp32/hardware/esp32/3.0.4/tools/partitions/boot_app0.bin" 0x10000 "/private/var/folders/2m/m49tydvj599cf1yv8nk7f82m0000gn/T/arduino/sketches/AFE8B507A91E7CFA84208FDAFCC5A9A9/CameraWebServer.ino.bin"
+
+Changing baud rate to 460800
+
+"/Users/twl/Library/Arduino15/packages/esp32/tools/esptool_py/4.6/esptool" 
+--chip esp32 
+--port "/dev/cu.usbserial-210" 
+--baud 460800  
+--before default_reset 
+--after hard_reset write_flash  
+-z 
+--flash_mode keep 
+--flash_freq keep 
+--flash_size keep 0x1000 "/private/var/folders/2m/m49tydvj599cf1yv8nk7f82m0000gn/T/arduino/sketches/AFE8B507A91E7CFA84208FDAFCC5A9A9/CameraWebServer.ino.bootloader.bin" 
+0x8000 "/private/var/folders/2m/m49tydvj599cf1yv8nk7f82m0000gn/T/arduino/sketches/AFE8B507A91E7CFA84208FDAFCC5A9A9/CameraWebServer.ino.partitions.bin" 
+0xe000 "/Users/twl/Library/Arduino15/packages/esp32/hardware/esp32/3.0.4/tools/partitions/boot_app0.bin" 
+0x10000 "/private/var/folders/2m/m49tydvj599cf1yv8nk7f82m0000gn/T/arduino/sketches/AFE8B507A91E7CFA84208FDAFCC5A9A9/CameraWebServer.ino.bin"
+
+
+arduino-cli upload -v -p /dev/cu.usbserial-210 --fqbn esp32:esp32:esp32cam --input-dir build/esp32.esp32.esp32cam/
+
+# leave off trailing /
+arduino-cli upload -v -p /dev/cu.usbserial-210 --fqbn esp32:esp32:esp32cam --input-dir build/esp32.esp32.esp32cam
+
+"/Users/twl/Library/Arduino15/packages/esp32/tools/esptool_py/4.6/esptool" --chip esp32 --port "/dev/cu.usbserial-210" --baud 460800  --before default_reset --after hard_reset write_flash  -z --flash_mode keep --flash_freq keep --flash_size keep 0x1000 "build/esp32.esp32.esp32cam//CameraWebServer.ino.bootloader.bin" 0x8000 "build/esp32.esp32.esp32cam//CameraWebServer.ino.partitions.bin" 0xe000 "/Users/twl/Library/Arduino15/packages/esp32/hardware/esp32/3.0.4/tools/partitions/boot_app0.bin" 0x10000 "build/esp32.esp32.esp32cam//CameraWebServer.ino.bin"
 
 #### Device images
 
